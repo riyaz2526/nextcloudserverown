@@ -56,6 +56,7 @@ use OCP\IUserManager;
 use OCP\IUserSession;
 use OCP\L10N\IFactory;
 use OCP\Mail\IMailer;
+use OCP\Security\ISecureRandom;
 use PHPUnit_Framework_MockObject_MockObject;
 use Test\TestCase;
 
@@ -85,6 +86,8 @@ class UsersControllerTest extends TestCase {
 	private $newUserMailHelper;
 	/** @var FederatedFileSharingFactory|\PHPUnit_Framework_MockObject_MockObject */
 	private $federatedFileSharingFactory;
+	/** @var ISecureRandom|\PHPUnit_Framework_MockObject_MockObject */
+	private $secureRandom;
 
 	protected function setUp() {
 		parent::setUp();
@@ -100,6 +103,7 @@ class UsersControllerTest extends TestCase {
 		$this->l10nFactory = $this->createMock(IFactory::class);
 		$this->newUserMailHelper = $this->createMock(NewUserMailHelper::class);
 		$this->federatedFileSharingFactory = $this->createMock(FederatedFileSharingFactory::class);
+		$this->secureRandom = $this->createMock(ISecureRandom::class);
 
 		$this->api = $this->getMockBuilder(UsersController::class)
 			->setConstructorArgs([
@@ -114,7 +118,8 @@ class UsersControllerTest extends TestCase {
 				$this->logger,
 				$this->l10nFactory,
 				$this->newUserMailHelper,
-				$this->federatedFileSharingFactory
+				$this->federatedFileSharingFactory,
+				$this->secureRandom
 			])
 			->setMethods(['fillStorageInfo'])
 			->getMock();
