@@ -59,6 +59,9 @@ const mutations = {
         let userIndex = state.users.findIndex(user => user.name == name);
         state.users.splice(userIndex, 1);
     },
+    addUserData(state, response) {
+        state.users.push(response.data.ocs.data);
+    },
     enableDisableUser(state, { name, enabled }) {
         state.users.find(user => user.name == name).isEnabled = enabled;
         state.groups.find(group => group.id == '_disabledUsers').usercount += enabled ? -1 : 1;
@@ -159,6 +162,36 @@ const actions = {
     },
 
     /**
+     * Add group
+     * 
+     * @param {Object} context
+     * @param {string} gid Group id
+     * @returns {Promise}
+     */
+    addGroup(context, gid) {
+        return api.requireAdmin().then((response) => {
+            return api.post(OC.linkToOCS(`cloud/groups`, 2), {groupid: gid})
+                .then((response) => context.commit('addGroup', { name, gid }))
+                .catch((error) => context.commit('API_FAILURE', error));
+        });
+    },
+
+    /**
+     * Add group
+     * 
+     * @param {Object} context
+     * @param {string} gid Group id
+     * @returns {Promise}
+     */
+    removeGroup(context, gid) {
+        return api.requireAdmin().then((response) => {
+            return api.post(OC.linkToOCS(`cloud/groups`, 2), {groupid: gid})
+                .then((response) => context.commit('removeGroup', { name, gid }))
+                .catch((error) => context.commit('API_FAILURE', error));
+        });
+    },
+
+    /**
      * Add user to group
      * 
      * @param {Object} context
@@ -168,10 +201,8 @@ const actions = {
      * @returns {Promise}
      */
     addUserGroup(context, { name, gid }) {
-        let data = new FormData();
-        data.append('groupid', gid);
         return api.requireAdmin().then((response) => {
-            return api.post(OC.linkToOCS(`cloud/users/${name}/groups`, 2), data)
+            return api.post(OC.linkToOCS(`cloud/users/${name}/groups`, 2), {groupid: gid})
                 .then((response) => context.commit('addUserGroup', { name, gid }))
                 .catch((error) => context.commit('API_FAILURE', error));
         });
@@ -204,10 +235,8 @@ const actions = {
      * @returns {Promise}
      */
     addUserSubAdmin(context, { name, gid }) {
-        let data = new FormData();
-        data.append('groupid', gid);
         return api.requireAdmin().then((response) => {
-            return api.post(OC.linkToOCS(`cloud/users/${name}/subadmins`, 2), data)
+            return api.post(OC.linkToOCS(`cloud/users/${name}/subadmins`, 2),  {groupid: gid})
                 .then((response) => context.commit('addUserSubAdmin', { name, gid }))
                 .catch((error) => context.commit('API_FAILURE', error));
         });
@@ -238,10 +267,42 @@ const actions = {
      * @returns {Promise}
      */
     deleteUser(context, name) {
-        context.commit('deleteUser', name);
         return api.requireAdmin().then((response) => {
             return api.delete(OC.linkToOCS(`cloud/users/${name}`, 2))
                 .then((response) => context.commit('deleteUser', name))
+                .catch((error) => context.commit('API_FAILURE', { name, error }));
+        });
+    },
+
+    /**
+     * Add a user
+     * 
+     * @param {Object} context
+     * @param {Object} options
+     * @param {string} options.userid User name (id)
+     * @param {string} options.password User password 
+     * @param {string} options.email User email
+     * @returns {Promise}
+     */
+    addUser({context, dispatch}, {userid, password, email, groups}) {
+        return api.requireAdmin().then((response) => {
+            return api.post(OC.linkToOCS(`cloud/users`, 2), {userid, password, email, groups})
+                .then((response) => dispatch('addUserData', userid))
+                .catch((error) => context.commit('API_FAILURE', { userid, error }));
+        });
+    },
+
+    /**
+     * Get user data and commit addition
+     * 
+     * @param {Object} context
+     * @param {string} name User name (id) 
+     * @returns {Promise}
+     */
+    addUserData(context, name) {
+        return api.requireAdmin().then((response) => {
+            return api.get(OC.linkToOCS(`cloud/users/${name}`, 2))
+                .then((response) => context.commit('addUserData', response))
                 .catch((error) => context.commit('API_FAILURE', { name, error }));
         });
     },
@@ -275,7 +336,13 @@ const actions = {
      */
     setUserData(context, { name, key, value }) {
         if (['email', 'quota', 'displayname', 'password'].indexOf(key) >= 0) {
-            if (typeof value === 'string' && value.length > 0) {
+            // We allow empty email or displayname
+            if (typeof value === 'string' &&
+                (
+                    (['quota', 'password'].indexOf(key) && value.length > 0) ||
+                    ['email', 'displayname'].indexOf(key) !== -1
+                )
+            ) {
                 return api.requireAdmin().then((response) => {
                     return api.put(OC.linkToOCS(`cloud/users/${name}`, 2), { key: key, value: value })
                         .then((response) => context.commit('setUserData', { name, key, value }))

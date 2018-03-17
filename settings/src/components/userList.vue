@@ -16,12 +16,13 @@
 			<div class="userActions"></div>
 		</div>
 
-		<form class="row" id="new-user" v-on:submit.prevent="createUser">
-			<div class="icon-add"></div>
+		<form class="row" id="new-user" v-on:submit.prevent="createUser" :disabled="loading">
+			<div :class="loading?'icon-loading-small':'icon-add'"></div>
 			<div class="name">
 				<input id="newusername" type="text" required v-model="newUser.name"
 					   :placeholder="t('settings', 'User name')" name="username"
-					   autocomplete="off" autocapitalize="none" autocorrect="off">
+					   autocomplete="off" autocapitalize="none" autocorrect="off"
+					   pattern="[a-zA-Z0-9 _\.@\-']+">
 			</div>
 			<div class="displayName">
 				<input id="newdisplayname" type="text" v-model="newUser.displayName"
@@ -33,7 +34,7 @@
 					   :required="newUser.mailAddress===''"
 					   :placeholder="t('settings', 'Password')" name="password"
 					   autocomplete="new-password" autocapitalize="none" autocorrect="off"
-					   inputmode="numeric" :minlength="minPasswordLength">
+					   :minlength="minPasswordLength">
 			</div>
 			<div class="mailAddress">
 				<input id="newemail" type="email" v-model="newUser.mailAddress"
@@ -99,6 +100,7 @@ export default {
 		return {
 			unlimitedQuota: unlimitedQuota,
 			defaultQuota: defaultQuota,
+			loading: false,
 			newUser: {
 				name:'',
 				displayName:'',
@@ -156,10 +158,17 @@ export default {
 
 		resetForm () {
 			// revert form to original state
-            Object.assign(this.newUser, this.$options.data.call(this).newUser);
+			Object.assign(this.newUser, this.$options.data.call(this).newUser);
+			this.loading = false;
         },
 		createUser() {
-			console.log(this.newUser)
+			this.loading = true;
+			this.$store.dispatch('addUser', {
+				userid: this.newUser.name,
+				password: this.newUser.password,
+				email: this.newUser.mailAddress,
+				groups: this.newUser.groups.map(group => group.id)
+			}).then(() =>this.resetForm());
 		}
 	}
 }
