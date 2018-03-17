@@ -85,6 +85,10 @@ class GroupsControllerTest extends \Test\TestCase {
 		$group
 			->method('getGID')
 			->willReturn($gid);
+		$group
+			->method('getDisplayName')
+			->willReturn($gid.'-name');
+
 		return $group;
 	}
 
@@ -164,7 +168,11 @@ class GroupsControllerTest extends \Test\TestCase {
 			->willReturn($groups);
 
 		$result = $this->api->getGroups($search, $limit, $offset);
-		$this->assertEquals(['groups' => ['group1', 'group2']], $result->getData());
+		$this->assertEquals(['groups' => [
+			Array('id' => 'group1', 'displayname' => 'group1-name'), 
+			Array('id' => 'group2', 'displayname' => 'group2-name')
+		]], $result->getData());
+
 	}
 
 	public function testGetGroupAsSubadmin() {

@@ -90,7 +90,7 @@ class GroupsController extends OCSController {
 		$groups = $this->groupManager->search($search, $limit, $offset);
 		$groups = array_map(function($group) {
 			/** @var IGroup $group */
-			return $group->getGID();
+			return ['id' => $group->getGID(), 'displayName' => $group->getDisplayName()];
 		}, $groups);
 
 		return new DataResponse(['groups' => $groups]);
